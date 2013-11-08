@@ -1327,9 +1327,12 @@ class ViewClient:
             # If there's only one device connected get its serialno
             adb = ViewClient.__obtainAdbPath()
             if DEBUG_DEVICE: print >>sys.stderr, "    using adb=%s" % adb
-            s = subprocess.Popen([adb, 'get-serialno'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={}).communicate()[0][:-1]
-            if s != 'unknown':
-                serialno = s
+            try:
+                s = subprocess.check_output([adb, 'get-serialno'], stderr=subprocess.STDOUT, env={})
+                if s != 'unknown':
+                    serialno = s
+            except CalledProcessError,e:
+                if DEBUG_DEVICE: print >>sys.stderr, "    ADB Error: returncode " + str(e.returncode) + " output: " + e.output
         if DEBUG_DEVICE: print >>sys.stderr, "    serialno=%s" % serialno
         if not serialno:
             warnings.warn("Couldn't obtain the serialno of the connected device")
