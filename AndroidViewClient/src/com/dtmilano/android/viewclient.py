@@ -1229,12 +1229,9 @@ class ViewClient:
                 if device.port:
                     adbport = device.port
             except: pass
-            try:
-                # FIXME: it seems there's no way of obtaining the serialno from the MonkeyDevice
-                subprocess.check_call([self.adb,'-P',str(adbport), '-s', self.serialno, 'forward', 'tcp:%d' % self.localPort,'tcp:%d' % self.remotePort])
-            except CalledProcessError, e:
-                if DEBUG_DEVICE: print >> sys.stderr, "Error code " + str(e.returncode + " forwarding port for ViewServer: " + e.output
-
+            # FIXME: it seems there's no way of obtaining the serialno from the MonkeyDevice
+            subprocess.check_call([self.adb,'-P',str(adbport), '-s', self.serialno, 'forward', 'tcp:%d' % self.localPort,'tcp:%d' % self.remotePort])
+        
         self.windows = None
         ''' The list of windows as obtained by L{ViewClient.list()} '''
 
