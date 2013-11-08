@@ -1223,8 +1223,15 @@ class ViewClient:
 
             self.localPort = localport
             self.remotePort = remoteport
+            # Fix for ADBs not running on 5037
+            adbport = 5037
+            try:
+                if device.port:
+                    adbport = device.port
+            except: pass
+
             # FIXME: it seems there's no way of obtaining the serialno from the MonkeyDevice
-            subprocess.check_call([self.adb, '-s', self.serialno, 'forward', 'tcp:%d' % self.localPort,
+            subprocess.check_call([self.adb,'-P',adbport, '-s', self.serialno, 'forward', 'tcp:%d' % self.localPort,
                                     'tcp:%d' % self.remotePort])
 
         self.windows = None
