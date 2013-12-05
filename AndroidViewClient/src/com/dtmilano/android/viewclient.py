@@ -1784,7 +1784,7 @@ class ViewClient:
         for ch in root.children:
             ViewClient.__traverse(ch, indent=indent+"   ", transform=transform, stream=stream)
 
-    def dump(self, window=-1, sleep=1):
+    def dump(self, window=-1, sleep=1,timeout=120):
         '''
         Dumps the window content.
 
@@ -1876,26 +1876,27 @@ You should force ViewServer back-end.''')
                 if not found:
                     raise RuntimeError("ERROR: Cannot find window '%s' in %s" % (window, self.windows))
 
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            try:
-                s.connect((VIEW_SERVER_HOST, self.localPort))
-            except socket.error, ex:
-                raise RuntimeError("ERROR: Connecting to %s:%d: %s" % (VIEW_SERVER_HOST, self.localPort, ex))
-            cmd = 'dump %x\r\n' % window
-            if DEBUG:
-                print >>sys.stderr, "executing: '%s'" % cmd
-            s.send(cmd)
-            received = ""
-            doneRE = re.compile("DONE")
-            ViewClient.setAlarm(120)
-            while True:
-                if DEBUG_RECEIVED:
-                    print >>sys.stderr, "    reading from socket..."
-                received += s.recv(1024)
-                if doneRE.search(received[-7:]):
-                    break
-            s.close()
-            ViewClient.setAlarm(0)
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                try:
+                    s.connect((VIEW_SERVER_HOST, self.localPort))
+                except socket.error, ex:
+                    raise RuntimeError("ERROR: Connecting to %s:%d: %s" % (VIEW_SERVER_HOST, self.localPort, ex))
+                cmd = 'dump %x\r\n' % window
+                if DEBUG:
+                    print >>sys.stderr, "executing: '%s'" % cmd
+                s.send(cmd)
+                received = ""
+                doneRE = re.compile("DONE")
+                while True:
+                    if DEBUG_RECEIVED:
+                        print >>sys.stderr, "    reading from socket..."
+                    try:
+                        ViewClient.setAlarm(timeout)
+                        received += s.recv(1024)
+                    finally:
+                        ViewClient.setAlarm(0)
+                    if doneRE.search(received[-7:]):
+                        break
             if DEBUG:
                 self.received = received
             if DEBUG_RECEIVED:
