@@ -1231,7 +1231,6 @@ class ViewClient:
             except: pass
             # FIXME: it seems there's no way of obtaining the serialno from the MonkeyDevice
             subprocess.check_call([self.adb,'-P',str(adbport), '-s', self.serialno, 'forward', 'tcp:%d' % self.localPort,'tcp:%d' % self.remotePort])
-        
         self.windows = None
         ''' The list of windows as obtained by L{ViewClient.list()} '''
 
@@ -1840,6 +1839,8 @@ class ViewClient:
                     received = re.sub(dumpedToDevTtyRE, '</hierarchy>', received)
                 if DEBUG_RECEIVED:
                     print >>sys.stderr, "received=", received
+            if re.search(u'ERROR: null root node returned by UiTestAutomationBridge.\r\n',received):
+                raise RuntimeError("ERROR: No root node returned")
             if re.search('\[: not found', received):
                 raise RuntimeError('''ERROR: Some emulator images (i.e. android 4.1.2 API 16 generic_x86) does not include the '[' command.
 While UiAutomator back-end might be supported 'uiautomator' command fails.
