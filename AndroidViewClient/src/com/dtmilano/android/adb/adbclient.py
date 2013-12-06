@@ -75,13 +75,13 @@ class Device:
 
 class AdbClient:
 
-    def __init__(self, serialno, hostname=HOSTNAME, port=PORT, settransport=True, reconnect=True):
+    def __init__(self, serialno, hostname=HOSTNAME, port=PORT, settransport=True, reconnect=True,timeout=TIMEOUT):
         if not serialno:
             raise ValueError("serialno must not be empty or None")
         self.serialno = serialno
         self.hostname = hostname
         self.port = port
-
+        self.timeout = timeout
         self.reconnect = reconnect
         self.__connect()
 
@@ -106,7 +106,11 @@ class AdbClient:
         if DEBUG:
             print >> sys.stderr, "__connect()"
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.settimeout(TIMEOUT)
+        # If timeout is 0, actually block
+        if self.timeout == 0:
+            self.socket.settimeout(None)
+        else:
+            self.socket.settimeout(self.timeout)
         try:
             self.socket.connect((self.hostname, self.port))
         except socket.error, ex:
@@ -164,7 +168,7 @@ class AdbClient:
         if DEBUG:
             print >> sys.stderr, "__checkOk()"
         self.checkConnected()
-        self.setAlarm(TIMEOUT)
+        self.setAlarm(self.timeout)
         recv = self.socket.recv(4)
         if DEBUG:
             print >> sys.stderr, "    __checkOk: recv=", repr(recv)
