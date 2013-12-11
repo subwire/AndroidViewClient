@@ -146,6 +146,33 @@ class AdbClient:
             self.__connect()
             self.__setTransport()
 
+    @staticmethod
+    def recv_timeout(sock,nbytes,timeout):
+        '''
+        Recieve data from a socket, with a timeout.
+        Returns the data, or None if the timeout occurred.
+
+        May also throw any of the usual socket exceptions (socket.error, socket.timeout, etc)
+
+        @type sock: socket
+        @param sock: The socket to recieve data from.  Must be opened already
+
+        @type nbytes: int
+        @param nbytes: Number of bytes, passed to recv()
+
+        @type timeout: int or float
+        @param timeout: Time to wait for data
+        '''
+        # Set non-blocking, just in case something weird happens
+        sock.setblocking(0)
+        # Wait until there's data
+        ready = select.select([sock], [], [], timeout_in_seconds)
+        if ready[0]:
+            return sock.recv(nbytes)
+        else:
+            return None
+    
+
     def __receive(self, nob=None):
         if DEBUG:
             print >> sys.stderr, "__receive()"
@@ -169,12 +196,12 @@ class AdbClient:
             print >> sys.stderr, "__checkOk()"
         self.checkConnected()
         self.setAlarm(self.timeout)
-        recv = self.socket.recv(4)
+        recv = AdbClient.recv_timeout(self.socket,4,self.timeout)
         if DEBUG:
             print >> sys.stderr, "    __checkOk: recv=", repr(recv)
         try:
             if recv != OKAY:
-                error = self.socket.recv(1024)
+                error = AdbClient.recv_timeout(self.socket,1024,self.timeout)
                 raise RuntimeError("ERROR: %s %s" % (repr(recv), error))
         finally:
             self.setAlarm(0)
@@ -195,7 +222,7 @@ class AdbClient:
         if DEBUG:
             print >> sys.stderr, "checkVersion(reconnect=%s)" % reconnect
         self.__send('host:version', reconnect=False)
-        version = self.socket.recv(8)
+        version = AdbClient.recv_timeout(self.socket,8,self.timeout)
         VERSION = '0004001f'
         if version != VERSION:
             raise RuntimeError("ERROR: Incorrect ADB server version %s (expecting %s)" % (version, VERSION))
@@ -245,7 +272,7 @@ class AdbClient:
             while True:
                 _str = None
                 try:
-                    _str = self.socket.recv(4096)
+                    _str = AdbClient.recv_timeout(self.socket,4096,self.timeout)
                 except Exception, ex:
                     print >> sys.stderr, "ERROR:", ex
                 if not _str:
