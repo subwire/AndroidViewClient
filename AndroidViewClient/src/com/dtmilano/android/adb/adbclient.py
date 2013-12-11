@@ -195,7 +195,6 @@ class AdbClient:
         if DEBUG:
             print >> sys.stderr, "__checkOk()"
         self.checkConnected()
-        self.setAlarm(self.timeout)
         recv = AdbClient.recv_timeout(self.socket,4,self.timeout)
         if DEBUG:
             print >> sys.stderr, "    __checkOk: recv=", repr(recv)
@@ -204,7 +203,7 @@ class AdbClient:
                 error = AdbClient.recv_timeout(self.socket,1024,self.timeout)
                 raise RuntimeError("ERROR: %s %s" % (repr(recv), error))
         finally:
-            self.setAlarm(0)
+            pass
         if DEBUG:
             print >> sys.stderr, "    __checkOk: returning True"
         return True
